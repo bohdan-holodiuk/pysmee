@@ -12,6 +12,11 @@ import sseclient
 
 import pysmee
 
+from urllib3.exceptions import InsecureRequestWarning
+
+# Suppress only the single warning from urllib3 needed.
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+
 
 EXIT = object()
 NUM_WORKERS = 5
@@ -35,7 +40,7 @@ def send_data(where, data, do_send=True):
     logger('Headers: %s\nBody: %s' % (headers, body))
     if do_send:
         try:
-            r = requests.post(where, data=body, headers=headers)
+            r = requests.post(where, data=body, headers=headers, verify=False)
             LOG.info('POST %s - %s' % (where, r.status_code))
         except Exception as exc:
             LOG.error('Error sending message to %s: %s' %
@@ -146,6 +151,7 @@ class Receiver(threading.Thread):
             LOG.debug('Connecting to %s' % self.source)
             try:
                 session = requests.Session()
+                session.verify = False
                 client = sseclient.SSEClient(self.source, session=session)
 
                 for msg in client:
