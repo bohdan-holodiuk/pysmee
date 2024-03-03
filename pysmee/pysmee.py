@@ -108,7 +108,15 @@ class Worker(threading.Thread):
         elif msg.event == 'message':
             self.save(msg.data)
             # Forward if we have url, show if not
-            send_data(self.url, msg.data, do_send=bool(self.url))
+            # send_data(self.url, msg.data, do_send=bool(self.url))
+            if self.url:
+                try:
+                    request = requests.post(self.url, data={}, verify=False)
+                    LOG.info('POST %s - %s' % (self.url, request.status_code))
+                except Exception as exc:
+                    LOG.error('Post Error %s: %s' %(self.url, exc))
+            else:
+                send_data(self.url, msg.data, do_send=bool(self.url))
 
         elif msg.event == 'ready':
             LOG.verbose('Connected to %s' % self.source)
@@ -271,7 +279,7 @@ class Main(object):
 
         level = LOG_LEVELS.get(verbosity, logging.DEBUG)
         logging.basicConfig(
-            format='[%(asctime)s %(threadName)s] %(levelname)s: %(message)s',
+            format='[%(asctime)s %(threadName)s][%(name)s][%(lineno)d] %(levelname)s: %(message)s',
             level=logging.DEBUG)
         LOG = logging.getLogger()
         LOG.setLevel(level)
